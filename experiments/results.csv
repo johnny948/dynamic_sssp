@@ -1,0 +1,97 @@
+import numpy as np
+
+# ReLU function and its derivative
+def relu(z):
+    return np.maximum(0, z)
+
+def relu_derivative(z):
+    return (z > 0).astype(float)  # Gradient of ReLU: 1 if greater than 0, otherwise 0
+
+# Compute forward pass and gradients
+def compute_gradients(W, x):
+  
+    # Forward pass
+    Wx = np.dot(W, x)          
+    relu_Wx = relu(Wx)         
+    f = np.sum(relu_Wx**2)     
+
+    # Backpropagation
+    df_drelu = 2 * relu_Wx      
+    df_dWx = df_drelu * relu_derivative(Wx)  
+
+    df_dx = np.dot(W.T, df_dWx)  
+    df_dW = np.outer(df_dWx, x.T)  
+
+    return df_dx, df_dW
+
+# Example: Initialize W and x
+np.random.seed(42)
+W = np.random.randn(3, 3)  
+x = np.random.randn(3, 1)  
+
+# Compute gradients
+df_dx, df_dW = compute_gradients(W, x)
+
+# Output results
+print("df/dx:\n", df_dx)
+print("df/dW:\n", df_dW)
+
+# import numpy as np
+
+
+# # Define ReLU activation function
+# def relu(z):
+#     return np.maximum(0, z)
+
+
+# # Define derivative of ReLU function
+# def relu_derivative(z):
+#     return (z > 0).astype(float)
+
+
+# # Define L2 loss function
+# def l2_norm_squared(v):
+#     return np.sum(v ** 2)
+
+
+# # Compute gradients using backpropagation
+# def compute_gradients(W, x):
+#     """
+#     Compute gradients of f(W, x) = ||ReLU(Wx)||^2 w.r.t. W and x using backpropagation.
+
+#     Parameters:
+#     W (numpy.ndarray): A 3x3 weight matrix.
+#     x (numpy.ndarray): A 3x1 input vector.
+
+#     Returns:
+#     df_dx (numpy.ndarray): Gradient of f w.r.t x.
+#     df_dW (numpy.ndarray): Gradient of f w.r.t W.
+#     """
+
+#     # Forward pass
+#     z = W @ x  # Linear transformation
+#     a = relu(z)  # Apply ReLU activation
+#     f = l2_norm_squared(a)  # Compute L2 norm squared
+
+#     # Backward pass (Gradient Calculation)
+#     df_da = 2 * a  # Gradient of L2 norm w.r.t. a
+#     da_dz = relu_derivative(z)  # Gradient of ReLU function w.r.t. z
+#     df_dz = df_da * da_dz  # Chain rule
+
+#     df_dW = np.outer(df_dz, x.T)  # Gradient w.r.t. W (∂f/∂W = df_dz * x^T)
+#     df_dx = W.T @ df_dz  # Gradient w.r.t. x (∂f/∂x = W^T * df_dz)
+
+#     return df_dx, df_dW
+
+
+# # Example usage
+# np.random.seed(42)  # For reproducibility
+# W = np.random.randn(3, 3)  # Random 3x3 matrix
+# x = np.random.randn(3, 1)  # Random 3x1 input vector
+
+# df_dx, df_dW = compute_gradients(W, x)
+
+# print("Gradient w.r.t. x:\n", df_dx)
+# print("Gradient w.r.t. W:\n", df_dW)
+
+

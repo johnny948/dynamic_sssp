@@ -1,0 +1,10 @@
+{
+  "graphml_paths": [
+    "data/osm/new_brunswick_new_jersey_usa_drive.graphml",
+    "data/osm/piscataway_new_jersey_usa_drive.graphml"
+  ],
+  "algorithms": ["dijkstra", "astar"],
+  "pairs_per_graph": 20,
+  "runs_per_pair": 3,
+  "seed": 42
+}

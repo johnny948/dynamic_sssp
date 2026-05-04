@@ -1,124 +1,150 @@
-# Dynamic Single-Source Shortest Path (SSSP): Experiments and Evaluation
+# Dynamic Single-Source Shortest Path (SSSP)
 
-Course project: design, implementation, and experimental evaluation of algorithms for dynamic shortest path on grid graphs.
-
----
-
-## 1. Problem Motivation
-
-- **Problem**: Shortest path on a grid when the graph can **change over time** (e.g., a cell on the current path becomes blocked). Applications: robotics, game AI, routing.
-- **Why it matters**: Recomputing from scratch after every change is expensive; incremental or repair-based strategies can be faster when changes are local.
-- **Algorithmic interest**: We compare **full recomputation** (Dijkstra, A*) with **incremental repair** under one obstacle addition, and study scalability and statistical behavior.
+Implementation and experiments for shortest-path planning on **synthetic 4-connected grid maps** (Dijkstra, A* with Manhattan / Euclidean heuristics, dynamic obstacle update with rerun vs repair-like baseline), plus optional **OpenStreetMap (OSM)** road-network validation.
 
 ---
 
-## 2. Algorithms Employed
+## Requirements
 
-- **Dijkstra**: Standard SSSP with a binary min-heap priority queue; no heuristic. Time O((V + E) log V), space O(V).
-- **A***: Best-first search with admissible heuristics (Manhattan, Euclidean). Same worst-case complexity; typically expands fewer nodes when the heuristic is good.
-- **Dynamic setting**: After finding an initial path, we block one cell on that path, then compare:
-  - **Rerun A***: Run A* from scratch on the updated grid.
-  - **Incremental repair**: A simplified repair strategy (e.g., restricted search around the old path and the changed cell) to reflect the benefit of not recomputing globally.
-
-Implementation details, data structures (e.g., `BinaryMinHeap` in `src/pq.py`), and pseudocode are in the written report.
-
----
-
-## 3. Experimental Configuration and Implementation Details
-
-### 3.1 Implementation
-
-- **Language**: Python 3.
-- **Libraries**: Standard library plus `matplotlib`, `pandas` (for plotting and aggregation). See `requirements.txt`.
-- **Code**: All algorithms implemented in this repository (`src/`). No external SSSP libraries used for the core algorithms.
-
-### 3.2 Hardware and Environment (to be filled for your report)
-
-- **Machine**: [e.g. CPU model, RAM, OS]
-- **Python**: [e.g. Python 3.10]
-- **Interpreter**: CPython (no special JIT unless noted).
-
-You should run experiments on a single machine and report its specs so results are reproducible in context.
-
-### 3.3 Datasets
-
-- **Type**: **Synthetic** grid graphs.
-- **Structure**: 4-connected (or 8-connected if `allow_diagonal: true`) grids; each cell is blocked independently with probability `obstacle_p`; start (0,0) and goal (w−1, h−1) are kept free.
-- **Parameters** (see `experiments/configs.json`):
-  - **Static**: Grid sizes (e.g. 50×50, 100×100, 150×150, 200×200), obstacle probabilities (0.1, 0.2, 0.3), multiple seeds, multiple runs per configuration.
-  - **Dynamic**: Fixed grid size and obstacle probability; multiple seeds and multiple runs per (seed, heuristic) to obtain variance.
-
-### 3.4 Methodology
-
-- **Runs**: Each (configuration, seed) is run **multiple times** (`runs_per_config` in `configs.json`); each run is timed separately.
-- **Measurement**: Wall-clock time via `time.perf_counter()`; we also record **expanded nodes**, **relaxed edges**, and **visited set size** for analysis.
-- **Statistical treatment**: For each group (e.g. grid size × algorithm × heuristic), we compute **mean** and **variance** over all runs and seeds; plots use **mean ± standard error** (SE = sqrt(variance / n)).
-
----
-
-## 4. How to Run
-
-### 4.1 Install dependencies
+- **Python 3.10+** recommended (CPython).
+- Install dependencies from the project root:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4.2 Run experiments
+All commands below assume your **current working directory is the project root** (the folder that contains `run_experiments.py`).
 
-From the **project root** (directory containing `run_experiments.py`):
+---
+
+## Quick start (synthetic experiments)
+
+### 1. Run grid experiments
+
+Runs static and dynamic sweeps defined in `experiments/configs.json`. Writes CSV outputs under `experiments/`.
 
 ```bash
 python run_experiments.py
 ```
 
-This will:
+**Outputs**
 
-- Run all static and dynamic configurations in `experiments/configs.json`.
-- Write raw results to `experiments/results_static.csv` and `experiments/results_dynamic.csv`.
-- Write summary statistics (mean, variance, n_runs) to `experiments/summary_static.csv` and `experiments/summary_dynamic.csv`.
+| File | Description |
+|------|-------------|
+| `experiments/results_static.csv` | Raw rows per run (static). |
+| `experiments/summary_static.csv` | Aggregated mean / variance / `n_runs`. |
+| `experiments/results_dynamic.csv` | Raw rows per run (dynamic). |
+| `experiments/summary_dynamic.csv` | Aggregated mean / variance / `n_runs`. |
 
-**Note**: With larger grids and `runs_per_config` ≥ 5, the script may take several minutes.
+Runtime may take several minutes depending on grid sizes and `runs_per_config` in `experiments/configs.json`.
 
-### 4.3 Generate figures
+### 2. Plot synthetic results
 
-From the project root:
+Generates PNG figures under `experiments/figures/`.
 
 ```bash
 python experiments/plot_results.py
 ```
 
-Figures are saved under `experiments/figures/` (e.g. `static_time_vs_area.png`, `static_expanded_vs_area.png`, `static_vs_obstacle_p.png`, `dynamic_phase_comparison.png`). Use these in your report.
+Typical figures: `static_time_vs_area.png`, `static_expanded_vs_area.png`, `static_vs_obstacle_p.png`, `dynamic_phase_comparison.png`.
 
 ---
 
-## 5. Deliverables (for submission)
+## Optional: OSM road-network experiments
 
-- **Source code**: This repository (all of `src/`, `run_experiments.py`, `experiments/plot_results.py`, `experiments/configs.json`).
-- **Datasets**: No external datasets; graphs are generated from `configs.json` (seeds and parameters). To reproduce, use the same `configs.json` and Python version.
-- **Run instructions**: This README (Sections 4.1–4.3).
-- **Report**: Written report and (if required) oral presentation covering problem motivation, algorithms, experimental setup, results with tables/figures, and discussion/conclusions.
+### 1. Download OSM graphs (GraphML)
+
+```bash
+python tools/download_osm.py
+```
+
+By default this saves drive networks under `data/osm/`. You can override places and output directory; see:
+
+```bash
+python tools/download_osm.py --help
+```
+
+Ensure paths in `experiments/osm_configs.json` match the GraphML files you downloaded.
+
+### 2. Run OSM shortest-path experiments
+
+```bash
+python run_osm_experiments.py
+```
+
+**Outputs**
+
+| File | Description |
+|------|-------------|
+| `experiments/results_osm.csv` | Raw per-query rows. |
+| `experiments/summary_osm.csv` | Aggregated statistics by graph and algorithm. |
+
+### 3. Plot OSM results
+
+```bash
+python experiments/plot_osm_results.py
+```
+
+Figures are written to `experiments/figures_osm/`.
 
 ---
 
-## 6. Results and Performance Analysis
+## Optional: Interactive dashboard (OSM)
 
-- Use `summary_static.csv` and `summary_dynamic.csv` for tables (mean ± SE or variance).
-- Use the figures in `experiments/figures/` to discuss:
-  - **Scalability**: Runtime and expanded nodes vs grid area.
-  - **Obstacle density**: Effect of obstacle probability on time and expanded nodes.
-  - **Dynamic**: Comparison of first A* vs rerun vs incremental repair (time and expanded nodes).
+Requires `streamlit` (listed in `requirements.txt`).
 
-Interpret results in light of theoretical complexity and explain any discrepancies (e.g., cache effects, implementation constants).
+```bash
+streamlit run osm_dashboard.py
+```
+
+Open the URL shown in the terminal (usually `http://localhost:8501`). The dashboard reads `experiments/results_osm.csv` and `experiments/summary_osm.csv`; run `python run_osm_experiments.py` first if those files are missing.
 
 ---
 
-## 7. File layout
+## Configuration
 
-- `run_experiments.py` — runs static and dynamic experiments, writes raw and summary CSVs.
-- `experiments/configs.json` — grid sizes, seeds, `runs_per_config`, algorithms, heuristics.
-- `experiments/results_*.csv` — raw per-run results.
-- `experiments/summary_*.csv` — mean/variance per group.
-- `experiments/plot_results.py` — generates figures with error bars.
-- `experiments/figures/` — output directory for PNGs.
-- `src/` — graph, priority queue, Dijkstra, A*, dynamic repair, generators, utils, metrics.
+| File | Role |
+|------|------|
+| `experiments/configs.json` | Synthetic static/dynamic parameters (grid sizes, obstacle probabilities, seeds, `runs_per_config`, algorithms, heuristics). |
+| `experiments/osm_configs.json` | OSM GraphML paths, number of random OD pairs, repeats, algorithms. |
+
+---
+
+## Project layout
+
+```
+src/                    # Core algorithms and data structures
+  astar.py              # A* (Manhattan / Euclidean on grids)
+  dijstra.py            # Dijkstra on grids
+  dynamic.py            # Dynamic obstacle + rerun / repair-like
+  graph.py, pq.py, ...
+  road_algorithms.py    # Dijkstra / A* on OSMnx graphs (optional track)
+experiments/
+  configs.json
+  osm_configs.json
+  plot_results.py       # Synthetic figures
+  plot_osm_results.py   # OSM figures
+run_experiments.py      # Main synthetic experiment driver
+run_osm_experiments.py  # OSM experiment driver
+tools/download_osm.py   # Download OSM GraphML via OSMnx
+osm_dashboard.py        # Streamlit UI for OSM CSVs
+requirements.txt
+README.md
+```
+
+---
+
+## Reproducibility and data
+
+- **Synthetic data** are generated on the fly from `experiments/configs.json` (no fixed external grid files required).
+- **OSM data** are obtained from OpenStreetMap via OSMnx; reproduce by running `tools/download_osm.py` and then `run_osm_experiments.py`.
+
+For course submission, document your **hardware** (CPU, RAM, OS) and **Python version** next to reported runtimes.
+
+---
+
+## Troubleshooting
+
+- **`ModuleNotFoundError: src`** — Run scripts from the **project root**, not from inside `src/`.
+- **Missing OSM CSVs in the dashboard** — Run `python run_osm_experiments.py` after downloading GraphML files.
+- **Long runtimes** — Reduce grid sizes, seeds, or `runs_per_config` in `experiments/configs.json`.
